@@ -80,6 +80,24 @@ def append_experiment_log(
         )
 
 
+def get_sota_validation_ndcg(file_path):
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        return 0.0
+    with open(file_path, newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+        if "test_NDCG" not in (reader.fieldnames or []):
+            return 0.0
+        best = 0.0
+        for row in reader:
+            try:
+                value = float(row.get("test_NDCG", "0") or 0)
+            except ValueError:
+                continue
+            if value > best:
+                best = value
+        return best
+
+
 def main():
     args = parse_args()
     test_module = load_test_module(args.test_module)
@@ -103,6 +121,14 @@ def main():
     graded_validation = run_strategy(strategy, validation_judgments)
     validation_ndcgs = ndcgs(graded_validation)
     avg_validation_ndcg = validation_ndcgs.mean() if len(validation_ndcgs) else 0
+    file_path = os.path.join("rel_optimization", "experiments.csv")
+    sota_validation_ndcg = get_sota_validation_ndcg(file_path)
+    if avg_validation_ndcg <= sota_validation_ndcg:
+        raise ValueError(
+            "Validation NDCG did not beat SOTA. "
+            f"Validation NDCG: {avg_validation_ndcg:.6f}. "
+            f"Current SOTA validation NDCG: {sota_validation_ndcg:.6f}."
+        )
     append_experiment_log(
         test_module_name,
         args.experiment_description,
