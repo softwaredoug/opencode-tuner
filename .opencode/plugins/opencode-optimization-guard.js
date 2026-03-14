@@ -1,4 +1,7 @@
-const ALLOWED_FILE = "rel_optimization/new_strategy.py";
+const ALLOWED_FILES = new Set([
+  "rel_optimization/new_strategy.py",
+  "experiments.csv",
+]);
 const TRUTHY_VALUES = new Set(["on", "true", "1"]);
 let runCounter = 0;
 let baselineChangedFiles = [];
@@ -197,7 +200,9 @@ export const OptimizationGuard = async ({ $, client }) => {
       });
       const changedFiles = await getChangedFiles($);
       const newlyChangedFiles = diffFiles(changedFiles, baselineChangedFiles);
-      const gitDisallowed = newlyChangedFiles.filter((file) => file !== ALLOWED_FILE);
+      const gitDisallowed = newlyChangedFiles.filter(
+        (file) => !ALLOWED_FILES.has(file)
+      );
 
       await logEvent(client, "checked git diff after tool run", {
         runId,
@@ -225,7 +230,7 @@ export const OptimizationGuard = async ({ $, client }) => {
           results: revertResults,
         });
         throw new Error(
-          `OPENCODE_OPTIMIZATION is enabled. Only ${ALLOWED_FILE} may be edited. ` +
+          `OPENCODE_OPTIMIZATION is enabled. Only ${Array.from(ALLOWED_FILES).join(", ")} may be edited. ` +
             `Disallowed new changes detected: ${gitDisallowed.join(", ")}. ` +
             `Changes were reverted.`
         );
