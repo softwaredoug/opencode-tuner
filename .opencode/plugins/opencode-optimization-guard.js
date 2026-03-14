@@ -115,6 +115,39 @@ async function getChangedFiles($) {
   return Array.from(new Set(files));
   }
 
+async function isTrackedFile($, file) {
+  try {
+    await $`git ls-files --error-unmatch -- ${file}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function revertFiles($, files) {
+  const results = [];
+  for (const file of files) {
+    const tracked = await isTrackedFile($, file);
+    try {
+      if (tracked) {
+        await $`git checkout -- ${file}`.quiet();
+        results.push({ file, action: "checkout", status: "ok" });
+      } else {
+        await $`git clean -f -- ${file}`.quiet();
+        results.push({ file, action: "clean", status: "ok" });
+      }
+    } catch (error) {
+      results.push({
+        file,
+        action: tracked ? "checkout" : "clean",
+        status: "error",
+        error: String(error),
+      });
+    }
+  }
+  return results;
+}
+
 
 export const OptimizationGuard = async ({ $, client }) => {
   const optimizationState = getOptimizationState();
@@ -186,9 +219,15 @@ export const OptimizationGuard = async ({ $, client }) => {
           runId,
           disallowed: gitDisallowed,
         });
+        const revertResults = await revertFiles($, gitDisallowed);
+        await logEvent(client, "reverted disallowed changes", {
+          runId,
+          results: revertResults,
+        });
         throw new Error(
           `OPENCODE_OPTIMIZATION is enabled. Only ${ALLOWED_FILE} may be edited. ` +
-            `Disallowed new changes detected: ${gitDisallowed.join(", ")}`
+            `Disallowed new changes detected: ${gitDisallowed.join(", ")}. ` +
+            `Changes were reverted.`
         );
       }
     },
