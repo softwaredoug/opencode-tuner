@@ -1,14 +1,14 @@
 from cheat_at_search.logger import log_to_stdout
 from cheat_at_search.search import ndcgs, run_strategy
 from cheat_at_search.wands_data import corpus, judgments
-from rel_optimization.strategy import BM25Search
+from rel_optimization.new_strategy import NewSearch
 
 
 log_to_stdout(level="INFO")
 
 
 def main():
-    strategy = BM25Search(corpus)
+    strategy = NewSearch(corpus)
     all_queries = judgments["query"].drop_duplicates()
     training_queries = all_queries.sample(200, random_state=42)
     remaining_queries = all_queries[~all_queries.isin(training_queries)]
