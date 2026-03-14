@@ -10,9 +10,9 @@ log_to_stdout(level="INFO")
 def main():
     strategy = NewSearch(corpus)
     all_queries = judgments["query"].drop_duplicates()
-    training_queries = all_queries.sample(200, random_state=42)
+    training_queries = all_queries.sample(340, random_state=42)
     remaining_queries = all_queries[~all_queries.isin(training_queries)]
-    validation_queries = remaining_queries.sample(100, random_state=42)
+    validation_queries = remaining_queries.sample(140, random_state=42)
 
     training_judgments = judgments[judgments["query"].isin(training_queries)]
     validation_judgments = judgments[judgments["query"].isin(validation_queries)]

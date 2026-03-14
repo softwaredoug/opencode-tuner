@@ -5,3 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["pytest"]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.11.0",
+]
